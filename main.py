@@ -1,6 +1,8 @@
 import imaplib
 import smtplib
 import email
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 import sched, time
 from config import EMAIL_ADDRESS, EMAIL_PASSWORD
@@ -32,7 +34,7 @@ def get_email(mail, email_uid, set_seen=True):
     str_email = raw_email[0][1].decode('utf-8')
     email_msg = email.message_from_string(str_email)
     if set_seen:
-        print('Setting msg seen', email_uid)
+        # print('Setting msg seen', email_uid)
         update_read_status(mail, email_uid)
     return email_msg
 
@@ -52,25 +54,101 @@ def test_sub(server, email_list):
         subject = e['Subject'].lower().strip()
         efrom = e['From'].split()
         eto = e['To'].split()
-        print (efrom, eto, subject)
+        esub = e['Subject'].strip()
+        # print (eto, efrom, subject)
         msg = ''
+
+        validMail = True
+        isHtml = False
         if subject.startswith('[hi]') or subject.startswith('[hello]'):
-            msg = "\nHello " + ' '.join(efrom[:-1]) + "!\n\n\n- Sent from bot replica of Chirag Khurana!"
-        if subject.startswith('[test]'):
-            msg = "\n\nTesting you " + ' '.join(efrom[:-1]) + "!\n\n\n- Sent from bot replica of Chirag Khurana!"
-        server.sendmail(eto[-1], efrom[-1], msg)
-        print('Sent mail to', efrom)
+            msg = "Hello " + ' '.join(efrom[:-1]) + "!\n\n\n- Sent from bot replica of Chirag Khurana!"
+        elif subject.startswith('[test]'):
+            msg = "Testing you " + ' '.join(efrom[:-1]) + "!\n\n\n- Sent from bot replica of Chirag Khurana!"
+        
+        # My profile information
+        elif subject.startswith('[ck]'):
+            msg = """\
+                <html>
+                <body>
+                    <h3>HELLO!</h3> 
+                    <h3>I'm Chirag Khurana, a developer with a designer's state of mind based out of Delhi, India.<br/>In my spare time, I'm Batman.</h3>
+                    <br>
+                    <div class="projects"> 
+                        <h4>A few things I've worked on</h4>
+                        <ul>
+                            <li><a href="https://play.google.com/store/apps/details?id=com.zuccessful.zallpaper">
+                                <h4>ZALLS - WALLPAPERS</h4>
+                            </a></li>
+
+                            <li><a href="http://labs.chiragkhurana.com">
+                                <h4>CK LABS</h4>
+                            </a></li>
+
+                            <li><a href="http://btech.chiragkhurana.com?sort=percentage&order=desc">
+                                <h4>RESULT SCRAPER</h4>
+                            </a></li>
+
+                            <li><a href="http://kicka55studios.in">
+                                <h4>KICKA55 STUDIOS</h4>
+                            </a></li>
+                        </ul>
+                    </div>
+
+                    <div class="footer">
+                        <h4>Online Presence</h4>
+                        <ul>
+                            <li><a href="https://github.com/ckhurana" class="fa fa-github fa-lg">Github</a></li>
+                            <li><a href="https://www.linkedin.com.in/khuranachirag" class="fa fa-linkedin fa-lg">LinkedIn</a></li>
+                            <li><a href="https://twitter.com/ChiragKhurana95" class="fa fa-twitter fa-lg">Twitter</a></li>
+                            <li><a href="https://www.behance.net/chiragkhurana" class="fa fa-behance fa-lg">Behance</a></li>
+                            <li><a href="https://www.instagram.com/chirag.in" class="fa fa-instagram fa-lg">Instagram</a></li>
+                            <li>Contact me: <b>me [at] chiragkhurana [dot] com</b></li>
+                        </ul>
+                        <br>
+                        <p>&copy; 2017 | <a href="http://chiragkhurana.com">Chirag Khurana</a></p>
+                    </div>
+                </body>
+                </html>
+            """
+            isHtml = True
+        else:
+            validMail = False
+        
+
+        # server.sendmail(eto[-1], efrom[-1], msg)
+        if validMail:
+            efrom, eto = eto[-1], efrom[-1]
+            sendMail(server, efrom, eto, esub, msg, isHtml)
+            print('Sent mail to', eto)
+
+
+def sendMail(server, me, you, subject, content, isHtml=False):
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = subject
+    msg['From'] = me
+    msg['To'] = you
+    if isHtml:
+        part = MIMEText(content, 'html') 
+    else:
+        part = MIMEText(content, 'plain')
+    msg.attach(part)
+    server.sendmail(me, you, msg.as_string())
+
+
+
+
 
 s = sched.scheduler(time.time, time.sleep)
-delay = 120
+delay = 10
 
 def keep_checking(mail, server, sc):
+    print('-' * 40)
     print('Checking...')
     select(mail, 'inbox')
     mail_ids = get_unread_emails_uid(mail)
-    print(mail_ids)
+    # print(mail_ids)
     email_list = get_all_emails(mail, mail_ids, True)
-    print (email_list)
+    # print (email_list)
     test_sub(server, email_list)
 
     s.enter(delay, 1, keep_checking, (mail, server, sc))
@@ -83,6 +161,7 @@ if __name__ == '__main__':
             s.run()
         except Exception as e:
             print(e)
+            server.quit()
             mail, server = login(EMAIL_ADDRESS, EMAIL_PASSWORD)
 
 
