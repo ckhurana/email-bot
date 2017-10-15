@@ -7,6 +7,12 @@ from email.mime.text import MIMEText
 import sched, time
 from config import EMAIL_ADDRESS, EMAIL_PASSWORD
 
+# Globals
+s = sched.scheduler(time.time, time.sleep)
+delay = 10
+mail = ''
+server = ''
+
 def login(email, password):
     mail = imaplib.IMAP4_SSL('imap.zoho.com')
     mail.login(email, password)
@@ -118,7 +124,7 @@ def test_sub(server, email_list):
         # server.sendmail(eto[-1], efrom[-1], msg)
         if validMail:
             efrom, eto = eto[-1], efrom[-1]
-            sendMail(server, efrom, eto, esub, msg, isHtml)
+            sendMail(efrom, eto, esub, msg, isHtml)
             print('Sent mail to', eto)
 
 
@@ -150,12 +156,6 @@ def keep_checking(mail, server, sc):
     # print (email_list)
     test_sub(server, email_list)
     s.enter(delay, 1, keep_checking, (mail, server, sc))
-
-
-s = sched.scheduler(time.time, time.sleep)
-delay = 10
-mail = ''
-server = ''
 
 
 if __name__ == '__main__':
