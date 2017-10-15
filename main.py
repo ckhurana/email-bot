@@ -122,7 +122,7 @@ def test_sub(server, email_list):
             print('Sent mail to', eto)
 
 
-def sendMail(server, me, you, subject, content, isHtml=False):
+def sendMail(me, you, subject, content, isHtml=False):
     global mail, server
     msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
