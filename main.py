@@ -123,6 +123,7 @@ def test_sub(server, email_list):
 
 
 def sendMail(server, me, you, subject, content, isHtml=False):
+    global mail, server
     msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
     msg['From'] = me
@@ -132,14 +133,12 @@ def sendMail(server, me, you, subject, content, isHtml=False):
     else:
         part = MIMEText(content, 'plain')
     msg.attach(part)
-    server.sendmail(me, you, msg.as_string())
+    try:
+        server.sendmail(me, you, msg.as_string())
+    except Exception as e:
+        mail, server = login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+        server.sendmail(me, you, msg.as_string())
 
-
-
-
-
-s = sched.scheduler(time.time, time.sleep)
-delay = 10
 
 def keep_checking(mail, server, sc):
     print('-' * 40)
@@ -150,10 +149,17 @@ def keep_checking(mail, server, sc):
     email_list = get_all_emails(mail, mail_ids, True)
     # print (email_list)
     test_sub(server, email_list)
-
     s.enter(delay, 1, keep_checking, (mail, server, sc))
 
+
+s = sched.scheduler(time.time, time.sleep)
+delay = 10
+mail = ''
+server = ''
+
+
 if __name__ == '__main__':
+    global mail, server
     mail, server = login(EMAIL_ADDRESS, EMAIL_PASSWORD)
     while True:
         try:
